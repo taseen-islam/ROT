@@ -7,6 +7,9 @@ import math
 from datetime import datetime
 import os
 
+'''
+cameras argument when initializing MultiCamPCD should be a **list**
+'''
 
 class MultiCamPCD():
     def __init__(self, xml_path, cameras, width=200, height=200, depth=True):
@@ -25,37 +28,26 @@ class MultiCamPCD():
         rgb_array = a[0]
         depth_array = a[1]
 
-        # print(depth_array)
-        # print(depth_array.shape)
-
-        '''
-        Commented lines below show and save RGB image
-        '''
-        # rgb_img = Image.fromarray(rgb_array)
-        # rgb_img.save("rgb_depth_images/rgb_img.png")
-        # rgb_img.show()
-
         extent = self.sim.model.stat.extent
         near = self.sim.model.vis.map.znear * extent
         far = self.sim.model.vis.map.zfar * extent
 
+        '''
+        Commented line below makes visualization easy for debugging, but should be removed for accurate meter representation
+        during actual point cloud generation
+        '''
         # near = 3 # Remove this line for accurate Meters representation. It is just here so I can visualize the images better
-
-        # print(extent)
-        # print(near)
-        # print(far)
 
         depth_array = (np.vectorize(self.depthimg2Meters)(near, far, depth_array))
 
-        # print(depth_array)
-        # print(depth_array.dtype)
-        # print(depth_array[0].dtype)
-        # print((depth_array[0][0]))
-        # print(depth_array.shape)
 
         '''
-        Commented lines below show and save depth image
+        Commented lines below show and save rgb and depth images
         '''
+
+        # rgb_img = Image.fromarray(rgb_array)
+        # rgb_img.save("rgb_depth_images/rgb_img.png")
+        # rgb_img.show()
 
         # depth_img = Image.fromarray(depth_array)
         # depth_img = depth_img.convert('RGB')
@@ -91,17 +83,17 @@ class MultiCamPCD():
     
     def multicam_point_cloud(self):
         time = str(datetime.today())
-        save_path = f"rgb_depth_images/point_clouds/{time[:10]}"
+        save_path = f"rgb_depth_images/point_clouds/{time[:4]}.{time[5:7]}.{time[8:10]}"
         if os.path.isdir(save_path) == False:
             os.mkdir(save_path)
-        if os.path.isdir(f"{save_path}/{time[11:19]}") == False:
-            os.mkdir(f"{save_path}/{time[11:19]}")
+        if os.path.isdir(f"{save_path}/{time[11:13]}_{time[14:16]}_{time[17:19]}") == False:
+            os.mkdir(f"{save_path}/{time[11:13]}_{time[14:16]}_{time[17:19]}")
         for cam in self.cameras:
             print(f"Generating point cloud for camera: {cam}")
             rgbd = self.render_rgb_depth(cam)
             rgbd_image = self.make_RGBD(rgbd[0], rgbd[1])
             pcd = self.single_pcd(rgbd_image, cam)
-            o3d.io.write_point_cloud(f"{save_path}/{time[11:19]}/{cam}.ply", pcd)
+            o3d.io.write_point_cloud(f"{save_path}/{time[11:13]}_{time[14:16]}_{time[17:19]}/{cam}.ply", pcd)
             
         return len(self.cameras)
 
